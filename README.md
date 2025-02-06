@@ -9,12 +9,12 @@ A **bad** hour is defined currently as 50% or less of scheduled departures are o
 In the future, the bot will add functionality to pull TSA wait times and build a more robust scoring system. For now though, this is a little webscraper to twitter pipeline. :)
 
 
-## Authors
+## 🧍‍♂️ Authors
 
 - [@cruzdariel](https://www.github.com/cruzdariel)
 
 
-## Environment Variables
+## 🔐 Environment Variables
 
 To run this project, you will need to add the following environment variables to your `keys/secrets.sh` file:
 
@@ -32,12 +32,12 @@ If you are operating in an isolated secure environment and do not need to encryp
 
 You can access keys from X's [Developer Portal](https://developer.twitter.com/en/portal/petition/essential/basic-info).
 
-## Dependencies
+## 🔄 Dependencies
 Run `pip install bs4 tweepy requests` to install all the necessary modules to run this program.
 - Beautiful Soups, for the web scraper `pull_data()`
 - Tweeepy, a wrapper for interacting with X's API (you could also interact with it directly using requests to call X's V2 enpoint or another wrapper [here](https://docs.x.com/x-api/tools-and-libraries/overview#python))
 
-## Notes
+## 📝 Notes
 
 - X has a limit on Free developer accounts where **apps can only post 17 tweets every 24 hours.** The app runs every 1.5 hours, which averages out to 16 tweets per day. If the app runs into an error, it will look through the header of the error returned by X's API and pull every reset time for different rate limits, take the highest reset time, return the time in seconds between now and the reset time, and force the app to wait that amount of time before trying again. If you have a paid account or do not require this redunancy, feel free to remove it at the end of the script.
 - The web scraper function `pull_data()` locates the table with flights and extracts each row as a list inside a larger list `flights`. Depending on how your airport's website is designed, you may need to change the behavior of the web scraper. Learn more about using Beautiful Soups [here](https://realpython.com/beautiful-soup-web-scraper-python/).
