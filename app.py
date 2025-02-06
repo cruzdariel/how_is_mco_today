@@ -119,6 +119,8 @@ if __name__ == "__main__":
     while True:
         try:
             post_status()
+            print(f"Most delayed: {most_delayed}")
+            print(f"Most canceleld: {most_cancelled}")
             time.sleep(5400)  # wait for 1.5 hours before next post
         except tweepy.errors.TooManyRequests as error1:
             # i also learned that Twitter has a limit on posting tweets. this will make the code wait
