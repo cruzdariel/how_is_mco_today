@@ -1,6 +1,6 @@
 # How is MCO today?
 
-An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every hour.
+An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every 1.5 hours.
 
 A **good** hour is defined currently as 50% or more of scheduled departures are on-time.
 
