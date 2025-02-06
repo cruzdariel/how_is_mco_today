@@ -4,17 +4,17 @@ from bs4 import BeautifulSoup
 import requests
 import os
 
-# Run 'source ./keys/secrets.sh' in terminal before running the script to load
-# the necessary keys
-API_KEY = os.getenv("API_KEY")
-API_SECRET = os.getenv("API_SECRET")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
-ACCESS_SECRET = os.getenv("ACCESS_SECRET")
+# Make sure to run 'source ./keys/secrets.sh', or wherever your secrets file is 
+# in terminal before running the script to load the necessary keys securely
+API_KEY = os.getenv("X_API_KEY")
+API_SECRET = os.getenv("X_API_SECRET")
+ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
+ACCESS_SECRET = os.getenv("X_ACCESS_SECRET")
 
 client = tweepy.Client(
-                    consumer_key=API_KEY,
+                    consumer_key=API_KEY, 
                     consumer_secret=API_SECRET,
-                    access_token=ACCESS_TOKEN,
+                    access_token=ACCESS_TOKEN, 
                     access_token_secret=ACCESS_SECRET
                     ) 
 
@@ -77,7 +77,7 @@ def score(flights):
         else:
             None 
     
-    score_metric = (delayed+cancelled)/total_flights # Takes the percentage of flights NOT on schedule (betwen 0 and 1, 0 being good, 1 being bad)
+    score_metric = (delayed+cancelled)/total_flights # takes the percentage of flights NOT on schedule (betwen 0 and 1, 0 being good, 1 being bad)
     most_delayed = max(delayed_by_airline, key=delayed_by_airline.get, default=None)
     most_cancelled = max(cancelled_by_airline, key=cancelled_by_airline.get, default=None)
     return score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights
@@ -92,6 +92,7 @@ def tweet(post_text):
         print(f"Tweeted: {post_text}")
     except tweepy.TweepyException as e:
         print(f"Error: {e}")
+        raise
     return
 
 def post_status():
@@ -100,16 +101,36 @@ def post_status():
     """
     score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights = score(pull_data())
 
+    if total_flights == 0: # found out that the the script breaks if theres 0 flights, so added this redundancy
+        print("No flights found. Skipping tweet.")
+        return
+
     if score_metric > 0.5:
-        badtext = f"💔 MCO is having a BAD hour. Out of {total_flights} upcoming flights:\n\t\n\t{delayed} are delayed\n\t{cancelled} are cancelled\n\t{ontime} are on time\n\t\n\tScore: {1-score_metric::.2f}"
+        badtext = f"💔 MCO is having a BAD hour. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(badtext)
-        #print(badtext)
     elif score_metric < 0.5:
-        goodtext = f" ❤️ MCO is having a GOOD hour. Out of {total_flights} flights:\n\t\n\t{delayed} upcoming flights delayed\n\t{cancelled} upcoming flights cancelled\n\t{ontime} upcoming flights on time\n\t\n\tScore: {1-score_metric:.2f}"
+        goodtext = f"❤️ MCO is having a GOOD hour. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(goodtext)
-        #print(goodtext)
 
 if __name__ == "__main__":
-    post_status()
-    time.sleep(3600)  # Wait for 1 hour (3600 seconds)
-    #print(pull_data()[0]) # remove this later: just to see if it works
+    while True:
+        try:
+            post_status()
+            time.sleep(5400)  # wait for 1.5 hours before next post
+        except tweepy.errors.TooManyRequests as error1:
+            # i also learned that Twitter has a limit on posting tweets. this will make the code wait
+            # 24 hours or whatever time is given before trying again. (API limit is 17 tweets/24 hours for 
+            # free bots). this takes all the reset times in the error header, and forces the bot to wait whatever
+            # the longest reset time before running again is to avoid calling X and getting rate limited
+            
+            current_time = int(time.time())
+
+            rate_reset_time = int(error1.response.headers.get("x-user-limit-24hour-reset", current_time + 900))  
+            app_reset_time = int(error1.response.headers.get("x-app-limit-24hour-reset", current_time + 900))
+            final_reset_time = max(rate_reset_time, app_reset_time)
+            remaining_requests = int(error1.response.headers.get("x-rate-limit-remaining", 1))  # Default to 1 to be safe
+            
+            seconds_until_reset = max(final_reset_time - current_time, 900)  # default 15 min
+
+            print(f"No remaining API requests. Sleeping for {seconds_until_reset} seconds.")
+            time.sleep(seconds_until_reset)  
