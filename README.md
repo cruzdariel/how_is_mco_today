@@ -41,6 +41,7 @@ Run `pip install bs4 tweepy requests` to install all the necessary modules to ru
 
 - X has a limit on Free developer accounts where **apps can only post 17 tweets every 24 hours.** The app runs every 1.5 hours, which averages out to 16 tweets per day. If the app runs into an error, it will look through the header of the error returned by X's API and pull every reset time for different rate limits, take the highest reset time, return the time in seconds between now and the reset time, and force the app to wait that amount of time before trying again. If you have a paid account or do not require this redunancy, feel free to remove it at the end of the script.
 - The web scraper function `pull_data()` locates the table with flights and extracts each row as a list inside a larger list `flights`. Depending on how your airport's website is designed, you may need to change the behavior of the web scraper. Learn more about using Beautiful Soups [here](https://realpython.com/beautiful-soup-web-scraper-python/).
+- I am running this on a Linux remote machine hosted at the University of Chicago, using `tmux` to keep the `app.py` file running persistently after I disconnect. You can use any virtual machine environment that can run python3 and has a command line interface that can run tmux (or screen). I've seen people use [Amazon EC2 Free Tier](https://aws.amazon.com/ec2/?did=ft_card&trk=ft_card).
 
 ## 🔜 What's Next
 Here are some ideas I have in store for future versions of this X bot:
