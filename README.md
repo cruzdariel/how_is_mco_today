@@ -42,6 +42,17 @@ Run `pip install bs4 tweepy requests` to install all the necessary modules to ru
 - X has a limit on Free developer accounts where **apps can only post 17 tweets every 24 hours.** The app runs every 1.5 hours, which averages out to 16 tweets per day. If the app runs into an error, it will look through the header of the error returned by X's API and pull every reset time for different rate limits, take the highest reset time, return the time in seconds between now and the reset time, and force the app to wait that amount of time before trying again. If you have a paid account or do not require this redunancy, feel free to remove it at the end of the script.
 - The web scraper function `pull_data()` locates the table with flights and extracts each row as a list inside a larger list `flights`. Depending on how your airport's website is designed, you may need to change the behavior of the web scraper. Learn more about using Beautiful Soups [here](https://realpython.com/beautiful-soup-web-scraper-python/).
 
+## 🔜 What's Next
+Here are some ideas I have in store for future versions of this X bot:
+- [ ] Store updates in a .csv file for future analysis and to act as an open source database for other researchers
+- [ ] In addition to flights, scrape TSA wait times for all terminals
+- [ ] Adjust the scoring system to incorporate TSA wait times (longer waits, lower score)
+- [ ] Adjust the scoring system to give more weight based on length of delays (more delayed flights ding the score more than say a 1-2 minute delay)
+- [ ] Add a function to return poorly operating airlines at MCO, call them out on X updates. (sorry Spirit!)
+- [ ] Add a function to return delays to certain cities, appending them to posts if multiple flights are delayed that are departing to a single airport
+- [ ] Eventually, after enough data is collected, compare scores to averages on the same day in the prior month in posts
+- [ ] Add a function that checks if the FAA has issued an airport event on the [National Airspace System Status](https://nasstatus.faa.gov/list) and appends the delay average to tweets if one is issued for MCO.
+
 ## 🔗 Links
 [![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://dariel.us/)
 [![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/darielc)
