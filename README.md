@@ -26,7 +26,7 @@ To run this project, you will need to add the following environment variables to
 
 - `ACCESS_SECRET`
 
-Before running the application, you need to load the variables into the environment by running 'source ./keys/secrets.sh', or wherever your secrets file is in the terminal.
+Before running the application, you need to load the variables into the environment by running `source ./keys/secrets.sh`, or wherever your secrets file is in the terminal.
 
 If you are operating in an isolated secure environment and do not need to encrypt your keys, pass the keys through as variables directly in `app.py`.
 
