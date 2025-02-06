@@ -71,13 +71,13 @@ def score(flights):
         elif flight[status_col].strip().lower() == "on time":
             ontime += 1
             ontime_by_airline[f"{flight[airline_col]}"] = ontime_by_airline.get(f"{flight[airline_col]}", 0) + 1
-        elif "Now" in flight[status_col]:
+        elif flight[status_col].lower() in ["now", "delayed"]:
             delayed += 1
             delayed_by_airline[f"{flight[airline_col]}"] = delayed_by_airline.get(f"{flight[airline_col]}", 0) + 1
         else:
-            None 
+            pass 
     
-    score_metric = (delayed+cancelled)/total_flights # takes the percentage of flights NOT on schedule (betwen 0 and 1, 0 being good, 1 being bad)
+    score_metric = (delayed+cancelled)/total_flights if total_flights else 0 # takes the percentage of flights NOT on schedule (betwen 0 and 1, 0 being good, 1 being bad)
     most_delayed = max(delayed_by_airline, key=delayed_by_airline.get, default=None)
     most_cancelled = max(cancelled_by_airline, key=cancelled_by_airline.get, default=None)
     return score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights
@@ -105,11 +105,14 @@ def post_status():
         print("No flights found. Skipping tweet.")
         return
 
-    if score_metric > 0.5:
-        badtext = f"💔 MCO is having a BAD hour. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
+    if score_metric == 0:
+        neutral = f"💤 MCO is SLEEPING! The airport doesn't have any upcoming flights right now."
+        tweet(neutral)
+    elif score_metric > 0.5:
+        badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(badtext)
     elif score_metric < 0.5:
-        goodtext = f"❤️ MCO is having a GOOD hour. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
+        goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(goodtext)
 
 if __name__ == "__main__":
