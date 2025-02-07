@@ -20,10 +20,10 @@ However, in future updates the scoring model will be replaced by a more nuanced 
 $$\text{Score V2} = \alpha{}O-\beta{}(D+C)-\gamma{}f(W_{general})-\delta{}f(W_{precheck})$$
 
 Where:
-- $$\alpha = \text{Weight of On-Time Flights}
-- $$\beta = \text{Weight of Delayed/Cancelled Flights}
-- $$\gamma = \text{Weight of TSA General Wait Times}$$
-- $$\delta = \text{Weight of TSA PreCheck Wait Times}$$
+- $$\alpha{} = \text{Weight of On-Time Flights}$$
+- $$\beta{} = \text{Weight of Delayed/Cancelled Flights}$$
+- $$\gamma{} = \text{Weight of TSA General Wait Times}$$
+- $$\delta{} = \text{Weight of TSA PreCheck Wait Times}$$
 - $$O = \text{No. of On Time Departures}$$
 - $$D = \text{No. of Delayed Departures}$$
 - $$C = \text{No. of Cancelled Departures}$$
@@ -66,10 +66,10 @@ Run `pip install bs4 tweepy requests` to install all the necessary modules to ru
 ## 🔜 What's Next
 Here are some ideas I have in store for future versions of this X bot:
 - [ ] Store updates in a .csv file for future analysis and to act as an open source database for other researchers
-- [ ] In addition to flights, scrape TSA wait times for all terminals
+- [X] In addition to flights, scrape TSA wait times for all terminals
 - [ ] Adjust the scoring system to incorporate TSA wait times (longer waits, lower score)
 - [ ] Adjust the scoring system to give more weight based on length of delays (more delayed flights ding the score more than say a 1-2 minute delay)
-- [ ] Add a function to return poorly operating airlines at MCO, call them out on X updates. (sorry Spirit!)
+- [X] Add a function to return poorly operating airlines at MCO, call them out on X updates. (sorry Spirit!)
 - [ ] Add a function to return delays to certain cities, appending them to posts if multiple flights are delayed that are departing to a single airport
 - [ ] Eventually, after enough data is collected, compare scores to averages on the same day in the prior month in posts
 - [ ] Add a function that checks if the FAA has issued an airport event on the [National Airspace System Status](https://nasstatus.faa.gov/list) and appends the delay average to tweets if one is issued for MCO.
