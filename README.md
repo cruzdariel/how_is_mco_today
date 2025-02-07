@@ -13,11 +13,11 @@ In the future, the bot will add functionality to pull TSA wait times and build a
 ## 🧮 The scoring model
 The current scoring model represents a simple fraction: 
 
-$$\frac{\text{No. of On Time Departures}}{\text{No. of Total Departures}}$$
+$$\text{Score V1} = \frac{\text{No. of On Time Departures}}{\text{No. of Total Departures}}$$
 
 However, in future updates the scoring model will be replaced by a more nuanced calculation. In the planned version 2 of the scoring model, the bot will take into account counts of flight delays in addition to TSA wait time averages for both TSA Precheck and general checkpoints. The scoting model in the next update will likely be:
 
-$$\text{Score} = \alpha{}O-\beta{}(D+C)-\gamma{}f(W_{general})-\delta{}f(W_{precheck})$$
+$$\text{Score V2} = \alpha{}O-\beta{}(D+C)-\gamma{}f(W_{general})-\delta{}f(W_{precheck})$$
 
 Where:
 - $$O = \text{No. of On Time Departures}$$
