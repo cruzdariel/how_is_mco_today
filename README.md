@@ -17,7 +17,7 @@ $$\text{Score V1} = \frac{\text{No. of On Time Departures}}{\text{No. of Total D
 
 However, in future updates the scoring model will be replaced by a more nuanced calculation. In the planned version 2 of the scoring model, the bot will take into account counts of flight delays in addition to TSA wait time averages for both TSA Precheck and general checkpoints. The scoting model in the next update will likely be:
 
-$$\text{Scor V2}=a\left(1-\left(\frac{1}{1+e^{\left(-70\left(\frac{C}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+b\left(1-\left(\frac{1}{1+e^{\left(-15\left(\frac{D}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+c\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(G-50\right)\right)}}-\frac{1}{1+e^{5}}\right)\right)+d\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(P-15\right)\right)}}-\frac{1}{1+e^{1.5}}\right)\right)$$
+$$\text{Score V2}=a\left(1-\left(\frac{1}{1+e^{\left(-70\left(\frac{C}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+b\left(1-\left(\frac{1}{1+e^{\left(-15\left(\frac{D}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+c\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(G-50\right)\right)}}-\frac{1}{1+e^{5}}\right)\right)+d\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(P-15\right)\right)}}-\frac{1}{1+e^{1.5}}\right)\right)$$
 
 Where:
 - $$\alpha{} = \text{Weight of On-Time Flights}$$
@@ -29,6 +29,8 @@ Where:
 - $$C = \text{No. of Cancelled Departures}$$
 - $$W_x = \text{Average wait for TSA PreCheck or General (in minutes)}$$
 - $$f(W_x) = \frac{W_x}{W_x+k}$$, where $$k = \text{Historic Average Wait (in minutes)}$$
+
+You can find a visualization of this equation in [Demos](https://www.desmos.com/calculator/lzmoy6q9rm).
 
 Although this next update will be much better than a simple count of on time flights over total flights, there is still [work left to be done](https://www.youtube.com/watch?v=fY7l2pcxdHM). In future editions, I want to calculate the average length of delay for each delayed flight, and weigh longer delays more than shorter delays in the calculation. I feel this is a fairer scoring metric than the current metric, which is a simple count of delayed flights.
 
