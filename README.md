@@ -2,10 +2,6 @@
 
 An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every 1.5 hours.
 
-A **good** hour is defined currently as 50% or more of scheduled departures are on-time.
-
-A **bad** hour is defined currently as 50% or less of scheduled departures are on-time.
-
 In the future, the bot will add functionality to pull TSA wait times and build a more robust scoring system. For now though, this is a little webscraper to twitter pipeline. :)
 
 
@@ -14,7 +10,12 @@ In the future, the bot will add functionality to pull TSA wait times and build a
 - [@cruzdariel](https://www.github.com/cruzdariel)
 
 
-## 🔐 Environment Variables
+## 🧮 The scoring model
+The current scoring model represents a simple fraction: $$\frac{\text{No. of On Time Departures}}{\text{No. of Total Departures}}$$
+
+
+## ▶️ Running the app
+### 🔐 Environment Variables
 
 To run this project, you will need to add the following environment variables to your `keys/secrets.sh` file:
 
@@ -32,7 +33,7 @@ If you are operating in an isolated secure environment and do not need to encryp
 
 You can access keys from X's [Developer Portal](https://developer.twitter.com/en/portal/petition/essential/basic-info).
 
-## 🔄 Dependencies
+### 🔄 Dependencies
 Run `pip install bs4 tweepy requests` to install all the necessary modules to run this program.
 - Beautiful Soups, for the web scraper `pull_data()`
 - Tweeepy, a wrapper for interacting with X's API (you could also interact with it directly using requests to call X's V2 enpoint or another wrapper [here](https://docs.x.com/x-api/tools-and-libraries/overview#python))
