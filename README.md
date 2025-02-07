@@ -69,7 +69,7 @@ Run `pip install bs4 tweepy requests` to install all the necessary modules to ru
 Here are some ideas I have in store for future versions of this X bot:
 - [ ] Store updates in a .csv file for future analysis and to act as an open source database for other researchers
 - [X] In addition to flights, scrape TSA wait times for all terminals
-- [ ] Adjust the scoring system to incorporate TSA wait times (longer waits, lower score)
+- [X] Adjust the scoring system to incorporate TSA wait times (longer waits, lower score)
 - [ ] Adjust the scoring system to give more weight based on length of delays (more delayed flights ding the score more than say a 1-2 minute delay)
 - [X] Add a function to return poorly operating airlines at MCO, call them out on X updates. (sorry Spirit!)
 - [ ] Add a function to return delays to certain cities, appending them to posts if multiple flights are delayed that are departing to a single airport
