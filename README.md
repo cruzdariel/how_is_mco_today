@@ -20,10 +20,10 @@ However, in future updates the scoring model will be replaced by a more nuanced 
 $$\text{Score} = \alpha{}O-\beta{}(D+C)-\gamma{}f(W_{general})-\delta{}f(W_{precheck})$$
 
 Where:
-- $$\text{O} = \text{No. of On Time Departures}$$
-- $$\text{D} = \text{No. of Delayed Departures}$$
-- $$\text{C} = \text{No. of Cancelled Departures}$$
-- $$\text{W_x} = \text{Average wait for TSA PreCheck or General}$$
+- $$O = \text{No. of On Time Departures}$$
+- $$D = \text{No. of Delayed Departures}$$
+- $$C = \text{No. of Cancelled Departures}$$
+- $$W_x = \text{Average wait for TSA PreCheck or General}$$
 - $$f(W_x) = \frac{W_x}{W_x+k}$$, where $$k = {historic average wait}$$
 
 Although this next update will be much better than a simple count of on time flights over total flights, there is still [work left to be done](https://www.youtube.com/watch?v=fY7l2pcxdHM). In future editions, I want to calculate the average length of delay for each delayed flight, and weigh longer delays more than shorter delays in the calculation. I feel this is a fairer scoring metric than the current metric, which is a simple count of delayed flights.
