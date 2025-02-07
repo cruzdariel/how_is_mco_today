@@ -20,6 +20,10 @@ However, in future updates the scoring model will be replaced by a more nuanced 
 $$\text{Score V2} = \alpha{}O-\beta{}(D+C)-\gamma{}f(W_{general})-\delta{}f(W_{precheck})$$
 
 Where:
+- $$\alpha{} = \text{Weight of On-Time Flights}
+- $$\beta{} = \text{Weight of Delayed/Cancelled Flights}
+- $$\gamma{} = \text{Weight of TSA General Wait Times}$$
+- $$\delta{} = \text{Weight of TSA PreCheck Wait Times}$$
 - $$O = \text{No. of On Time Departures}$$
 - $$D = \text{No. of Delayed Departures}$$
 - $$C = \text{No. of Cancelled Departures}$$
