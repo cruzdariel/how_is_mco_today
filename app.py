@@ -3,6 +3,8 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import os
+import math
+
 
 # Make sure to run 'source ./keys/secrets.sh', or wherever your secrets file is 
 # in terminal before running the script to load the necessary keys securely
@@ -41,7 +43,7 @@ def pull_data():
                     print(f"Error: is this row too long? Row length: {len(cells)}")
     return flights
 
-def pull_tsa1():
+def pull_tsa():
     """
     Calls the GOAA API to retrive the TSA wait times for all open checkpoints, distinguishes them between PreCheck
     and non PreCheck, and then returns a dictionary containing: average_general_wait, average_precheck_wait, average_overall_wait,
@@ -99,7 +101,8 @@ def pull_tsa1():
 
 def score(flights):
     """
-    Counts flights delayed, cancelled, and on time, encodes it into a scoring metric. Returns an integer with scoring metric.
+    Counts flights delayed, cancelled, and on time, encodes it into a scoring metric. Returns an 
+    integer with scoring metric.
     """
     delayed = 0
     cancelled = 0
@@ -108,6 +111,9 @@ def score(flights):
     delayed_by_airline = {}
     cancelled_by_airline = {}
     ontime_by_airline = {}
+    average_general_wait = int(pull_tsa()['average_general_wait'])
+    average_precheck_wait = int(pull_tsa()['average_precheck_wait'])
+    average_overall_wait = int(pull_tsa()['average_overall_wait'])
 
     total_flights = 0
 
@@ -133,11 +139,53 @@ def score(flights):
             delayed_by_airline[f"{flight[airline_col]}"] = delayed_by_airline.get(f"{flight[airline_col]}", 0) + 1
         else:
             pass 
-    
-    score_metric = (delayed+cancelled)/total_flights if total_flights else 0 # takes the percentage of flights NOT on schedule (betwen 0 and 1, 0 being good, 1 being bad)
+
+    # The full scoring equation can be found on Desmos: https://www.desmos.com/calculator/zxyds6lsls
+    alpha = 0.40  # cancellations weight
+    beta  = 0.30  # delays weight
+    gamma = 0.20  # TSA general wait weight
+    delta = 0.10  # TSA precheck wait weight
+
+    if total_flights:
+        ratio_cancelled = cancelled / total_flights
+        ratio_delayed   = delayed / total_flights
+    else:
+        ratio_cancelled = 0
+        ratio_delayed   = 0
+
+    # Cancellations component:
+    #   logistic function: 1 / (1 + exp(-70*(cancelled/total_flights) + 3))
+    #   constant: 1 / (1 + exp(3))
+    logistic_cancelled = 1 / (1 + math.exp(-70 * ratio_cancelled + 3))
+    constant_cancelled = 1 / (1 + math.exp(3))
+    cancellation_score = alpha * (1 - (logistic_cancelled - constant_cancelled))
+
+    # Delays component:
+    #   logistic function: 1 / (1 + exp(-15*(delayed/total_flights) + 3))
+    #   constant: 1 / (1 + exp(3))
+    logistic_delayed = 1 / (1 + math.exp(-15 * ratio_delayed + 3))
+    constant_delayed = 1 / (1 + math.exp(3))
+    delay_score = beta * (1 - (logistic_delayed - constant_delayed))
+
+    # TSA general wait component:
+    #   logistic function: 1 / (1 + exp(-0.1*(average_general_wait - 50)))
+    #   constant: 1 / (1 + exp(5))
+    logistic_general = 1 / (1 + math.exp(-0.1 * (average_general_wait - 50)))
+    constant_general = 1 / (1 + math.exp(5))
+    tsa_general_score = gamma * (1 - (logistic_general - constant_general))
+
+    # TSA precheck wait component:
+    #   logistic function: 1 / (1 + exp(-0.1*(average_precheck_wait - 15)))
+    #   constant: 1 / (1 + math.exp(1.5))
+    logistic_precheck = 1 / (1 + math.exp(-0.1 * (average_precheck_wait - 15)))
+    constant_precheck = 1 / (1 + math.exp(1.5))
+    tsa_precheck_score = delta * (1 - (logistic_precheck - constant_precheck))
+
+    # Final score is the sum of the weighted components:
+    score_metric = cancellation_score + delay_score + tsa_general_score + tsa_precheck_score
     most_delayed = max(delayed_by_airline, key=delayed_by_airline.get, default=None)
     most_cancelled = max(cancelled_by_airline, key=cancelled_by_airline.get, default=None)
-    return score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights
+    return score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait
 
 def tweet(post_text):
     """
@@ -152,11 +200,11 @@ def tweet(post_text):
         raise
     return
 
-def post_status():
+def post_status(debug):
     """
     Pulls the score and posts the scoring metric on X.
     """
-    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights = score(pull_data())
+    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait= score(pull_data())
 
     if total_flights == 0: # found out that the the script breaks if theres 0 flights, so added this redundancy
         print("No flights found. Skipping tweet.")
@@ -164,22 +212,37 @@ def post_status():
 
     if score_metric == 0:
         neutral = f"💤 MCO is SLEEPING! The airport doesn't have any upcoming flights right now."
-        tweet(neutral)
-    elif score_metric < 0.7:
-        badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
-        tweet(badtext)
+        if not debug:
+            tweet(neutral)
+        else:
+            print(f"Debug Mode: {neutral}")
+    elif score_metric <= 0.5:
+        badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
+        if not debug:
+            tweet(badtext)
+        else: 
+            print(f"Debug Mode: {badtext}")
+            print(score_metric)
     elif 0.5 < score_metric <= 0.7:
-        oktext = f"❤️‍🩹 MCO is having an OK day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
-        tweet(oktext)
+        oktext = f"❤️‍🩹 MCO is having an OK day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
+        if not debug:
+            tweet(oktext)
+        else:
+            print(f"Debug Mode: {oktext}")
+            print(score_metric)
     elif score_metric > 0.7:
-        goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
-        tweet(goodtext)
+        goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
+        if not debug:
+            tweet(goodtext)
+        else:
+            print(f"Debug Mode: {goodtext}")
+            print(score_metric)
 
 if __name__ == "__main__":
-    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights = score(pull_data())
+    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait = score(pull_data())
     while True:
         try:
-            post_status()
+            post_status(debug=True)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
             time.sleep(5400)  # wait for 1.5 hours before next post
