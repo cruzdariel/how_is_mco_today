@@ -10,6 +10,7 @@ API_KEY = os.getenv("X_API_KEY")
 API_SECRET = os.getenv("X_API_SECRET")
 ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
 ACCESS_SECRET = os.getenv("X_ACCESS_SECRET")
+TSA_API_KEY = os.getenv("TSA_API_KEY")
 
 client = tweepy.Client(
                     consumer_key=API_KEY, 
@@ -40,6 +41,62 @@ def pull_data():
                     print(f"Error: is this row too long? Row length: {len(cells)}")
     return flights
 
+def pull_tsa1():
+    """
+    Calls the GOAA API to retrive the TSA wait times for all open checkpoints, distinguishes them between PreCheck
+    and non PreCheck, and then returns a dictionary containing: average_general_wait, average_precheck_wait, average_overall_wait,
+    open_checkpoints_count, and lane_wait_times (which holds another list with all wait times for each lane)
+    """
+    url = "https://acc.api.goaa.aero/wait-times/checkpoint/MCO"
+    headers = {
+        "api-key": TSA_API_KEY,
+        "api-version": "140",
+        "Accept": "application/json"
+        }
+    response = requests.get(url, headers=headers)
+    data = response.json()
+    
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}, {response.text}")
+        return None  
+
+    if "data" not in data or "wait_times" not in data["data"]:
+        print("Invalid response format.")
+        return None
+
+    open_checkpoints = [cp for cp in data["data"]["wait_times"] if cp["isOpen"]]
+    
+    general_wait_times = []
+    precheck_wait_times = []
+    lane_wait_times = {}  
+
+    for checkpoint in open_checkpoints:
+        wait_time = checkpoint["waitSeconds"] / 60  # seconds -> minutes
+        lane_type = checkpoint["lane"]
+        lane_name = checkpoint["name"]
+
+        lane_wait_times[lane_name] = {"lane_type": lane_type, "wait_time": wait_time}  # Store in dictionary
+
+        if lane_type == "tsa_precheck":
+            precheck_wait_times.append(wait_time)
+        elif lane_type == "general":
+            general_wait_times.append(wait_time)
+
+    avg_general = sum(general_wait_times) / len(general_wait_times) if general_wait_times else None
+    avg_precheck = sum(precheck_wait_times) / len(precheck_wait_times) if precheck_wait_times else None
+
+    all_wait_times = general_wait_times + precheck_wait_times
+    avg_overall = sum(all_wait_times) / len(all_wait_times) if all_wait_times else None
+
+    return {
+        "average_general_wait": avg_general,
+        "average_precheck_wait": avg_precheck,
+        "average_overall_wait": avg_overall,
+        "open_checkpoints_count": len(open_checkpoints),
+        "lane_wait_times": lane_wait_times 
+    }
+
+
 def score(flights):
     """
     Counts flights delayed, cancelled, and on time, encodes it into a scoring metric. Returns an integer with scoring metric.
@@ -57,10 +114,10 @@ def score(flights):
     for flight in flights:
         status_col = 6
         airline_col = 1
-
+        
         if len(flight) < 7: # skip rows with less columns than expected
             continue
-        if flight[status_col].strip().lower() == "departed": # skips rows for already departed flights
+        if flight[status_col].strip().lower() in {"departed", "closed"}: # skip already departed flights
             continue
 
         total_flights += 1
@@ -68,10 +125,10 @@ def score(flights):
             cancelled += 1
             cancelled_by_airline[f"{flight[airline_col]}"] = cancelled_by_airline.get(f"{flight[airline_col]}", 0) + 1
             # This will get the current count for the airline from the dictionary, or default to 0 if it doesn't exist, then adds to it by 1.
-        elif flight[status_col].strip().lower() == "on time":
+        elif flight[status_col].strip().lower() in {"on time", "last call"}:
             ontime += 1
             ontime_by_airline[f"{flight[airline_col]}"] = ontime_by_airline.get(f"{flight[airline_col]}", 0) + 1
-        elif flight[status_col].lower() in ["now", "delayed"]:
+        elif "now" in flight[status_col].strip().lower() or flight[status_col].strip().lower() == "delayed":
             delayed += 1
             delayed_by_airline[f"{flight[airline_col]}"] = delayed_by_airline.get(f"{flight[airline_col]}", 0) + 1
         else:
@@ -108,19 +165,23 @@ def post_status():
     if score_metric == 0:
         neutral = f"💤 MCO is SLEEPING! The airport doesn't have any upcoming flights right now."
         tweet(neutral)
-    elif score_metric > 0.5:
-        badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
+    elif score_metric < 0.7:
+        badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(badtext)
-    elif score_metric < 0.5:
-        goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\tScore: {1-score_metric:.2f}"
+    elif 0.5 < score_metric <= 0.7:
+        oktext = f"❤️‍🩹 MCO is having an OK day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
+        tweet(oktext)
+    elif score_metric > 0.7:
+        goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {1-score_metric:.2f}"
         tweet(goodtext)
 
 if __name__ == "__main__":
+    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights = score(pull_data())
     while True:
         try:
             post_status()
             print(f"Most delayed: {most_delayed}")
-            print(f"Most canceleld: {most_cancelled}")
+            print(f"Most cancelled: {most_cancelled}")
             time.sleep(5400)  # wait for 1.5 hours before next post
         except tweepy.errors.TooManyRequests as error1:
             # i also learned that Twitter has a limit on posting tweets. this will make the code wait
@@ -138,4 +199,4 @@ if __name__ == "__main__":
             seconds_until_reset = max(final_reset_time - current_time, 900)  # default 15 min
 
             print(f"No remaining API requests. Sleeping for {seconds_until_reset} seconds.")
-            time.sleep(seconds_until_reset)  
+            time.sleep(seconds_until_reset)

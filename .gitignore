@@ -2,3 +2,4 @@ keys
 keys/secrets.sh
 keys/keys.md
 .DS_Store
+debug.py
