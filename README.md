@@ -8,11 +8,11 @@ An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.c
 
 
 ## 🧮 The scoring model
-The current scoring model represents a simple fraction: 
+The former scoring model represented a simple fraction: 
 
 $$\text{Score V1} = \frac{\text{No. of On Time Departures}}{\text{No. of Total Departures}}$$
 
-However, in future updates the scoring model will be replaced by a more nuanced calculation. In the planned version 2 of the scoring model, the bot will take into account counts of flight delays in addition to TSA wait time averages for both TSA Precheck and general checkpoints. The scoring model in the next update will likely be:
+The current scoring model is a more nuanced calculation. The bot takes into account counts of flight delays in addition to TSA wait time averages for both TSA Precheck and general checkpoints. The model is:
 
 $$\text{Score V2}=\alpha\left(1-\left(\frac{1}{1+e^{\left(-70\left(\frac{C}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+\beta\left(1-\left(\frac{1}{1+e^{\left(-15\left(\frac{D}{O+D+C}\right)+3\right)}}-\frac{1}{1+e^{3}}\right)\right)+\gamma\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(G-50\right)\right)}}-\frac{1}{1+e^{5}}\right)\right)+\delta\left(1-\left(\frac{1}{1+e^{\left(-0.1\left(P-15\right)\right)}}-\frac{1}{1+e^{1.5}}\right)\right)$$
 
