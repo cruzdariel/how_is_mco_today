@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import requests
 import os
 import math
+import csv
+from datetime import datetime
 
 
 # Make sure to run 'source ./keys/secrets.sh', or wherever your secrets file is 
@@ -126,16 +128,18 @@ def score(flights):
         if flight[status_col].strip().lower() in {"departed", "closed"}: # skip already departed flights
             continue
 
-        total_flights += 1
         if flight[status_col].strip().lower() == "cancelled":
             cancelled += 1
+            total_flights += 1
             cancelled_by_airline[f"{flight[airline_col]}"] = cancelled_by_airline.get(f"{flight[airline_col]}", 0) + 1
             # This will get the current count for the airline from the dictionary, or default to 0 if it doesn't exist, then adds to it by 1.
-        elif flight[status_col].strip().lower() in {"on time", "last call"}:
+        elif flight[status_col].strip().lower() in {"on time", "last call", "boarding"}:
             ontime += 1
+            total_flights += 1
             ontime_by_airline[f"{flight[airline_col]}"] = ontime_by_airline.get(f"{flight[airline_col]}", 0) + 1
         elif "now" in flight[status_col].strip().lower() or flight[status_col].strip().lower() == "delayed":
             delayed += 1
+            total_flights += 1
             delayed_by_airline[f"{flight[airline_col]}"] = delayed_by_airline.get(f"{flight[airline_col]}", 0) + 1
         else:
             pass 
@@ -185,7 +189,9 @@ def score(flights):
     score_metric = cancellation_score + delay_score + tsa_general_score + tsa_precheck_score
     most_delayed = max(delayed_by_airline, key=delayed_by_airline.get, default=None)
     most_cancelled = max(cancelled_by_airline, key=cancelled_by_airline.get, default=None)
-    return score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait
+    return score_metric, most_delayed, most_cancelled, delayed_by_airline, cancelled_by_airline, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait
+
+score_metric, most_delayed, most_cancelled, delayed_by_airline, cancelled_by_airline, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait = score(pull_data())
 
 def tweet(post_text):
     """
@@ -204,7 +210,6 @@ def post_status(debug):
     """
     Pulls the score and posts the scoring metric on X.
     """
-    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait= score(pull_data())
 
     if total_flights == 0: # found out that the the script breaks if theres 0 flights, so added this redundancy
         print("No flights found. Skipping tweet.")
@@ -216,21 +221,21 @@ def post_status(debug):
             tweet(neutral)
         else:
             print(f"Debug Mode: {neutral}")
-    elif score_metric <= 0.5:
+    elif score_metric <= 0.6:
         badtext = f"💔 MCO is having a BAD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
         if not debug:
             tweet(badtext)
         else: 
             print(f"Debug Mode: {badtext}")
             print(score_metric)
-    elif 0.5 < score_metric <= 0.7:
+    elif 0.6 < score_metric <= 0.8:
         oktext = f"❤️‍🩹 MCO is having an OK day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
         if not debug:
             tweet(oktext)
         else:
             print(f"Debug Mode: {oktext}")
             print(score_metric)
-    elif score_metric > 0.7:
+    elif score_metric > 0.8:
         goodtext = f"❤️ MCO is having a GOOD day. Out of {total_flights} upcoming flights:\n\t\n\t⚠️ {delayed} are delayed\n\t⛔️ {cancelled} are cancelled\n\t✅ {ontime} are on time\n\t\n\t🛂 TSA General Avg: {average_general_wait} mins\n\t⏩ TSA PreCheck Avg: {average_precheck_wait} mins\n\t\n\t‼️ Most Cancellations: {most_cancelled}\n\t❗️ Most Delays: {most_delayed}\n\t\n\tScore: {score_metric:.2f}"
         if not debug:
             tweet(goodtext)
@@ -239,12 +244,37 @@ def post_status(debug):
             print(score_metric)
 
 if __name__ == "__main__":
-    score_metric, most_delayed, most_cancelled, delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait, average_overall_wait = score(pull_data())
     while True:
         try:
+            # Make a tweet
             post_status(debug=True)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
+
+            # Write data to CSV
+            csv_row = {
+                'timestamp': datetime.now().isoformat(),
+                'score_metric': score_metric,
+                'most_delayed': most_delayed,
+                'most_cancelled': most_cancelled, 
+                'delayed_by_airline': str(delayed_by_airline),
+                'delayed': delayed,
+                'cancelled': cancelled,
+                'ontime': ontime,
+                'total_flights': total_flights,
+                'average_general_wait': average_general_wait,
+                'average_precheck_wait': average_precheck_wait,
+                'average_overall_wait': average_overall_wait,
+                'open_checkpoints': pull_tsa()['open_checkpoints_count'],
+                'lane_wait_times': str(pull_tsa()['lane_wait_times'])
+            }
+            file_exists = os.path.isfile('history.csv')
+            with open('history.csv', 'a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=csv_row.keys())
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow(csv_row)
+            
             time.sleep(5400)  # wait for 1.5 hours before next post
         except tweepy.errors.TooManyRequests as error1:
             # i also learned that Twitter has a limit on posting tweets. this will make the code wait
