@@ -6,6 +6,7 @@ import os
 import math
 import csv
 from datetime import datetime
+import subprocess
 
 
 # Make sure to run 'source ./keys/secrets.sh', or wherever your secrets file is 
@@ -243,11 +244,17 @@ def post_status(debug):
             print(f"Debug Mode: {goodtext}")
             print(score_metric)
 
+def push_to_github():
+    """When called, it will auto update the github repo with the most up to date information."""
+    subprocess.run(["git", "add", "history.csv"])
+    subprocess.run(["git", "commit", "-m", "Auto-update CSV"])
+    subprocess.run(["git", "push", "origin", "main"])
+
 if __name__ == "__main__":
     while True:
         try:
             # Make a tweet
-            post_status(debug=False)
+            post_status(debug=True)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
 
@@ -275,6 +282,7 @@ if __name__ == "__main__":
                 if not file_exists:
                     writer.writeheader()
                 writer.writerow(csv_row)
+            push_to_github()
             
             time.sleep(5400)  # wait for 1.5 hours before next post
         except tweepy.errors.TooManyRequests as error1:

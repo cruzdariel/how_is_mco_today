@@ -1,5 +1,6 @@
 keys
 keys/secrets.sh
 keys/keys.md
+.twitter_keys
 .DS_Store
 debug.py
