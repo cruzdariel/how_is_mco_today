@@ -247,7 +247,7 @@ if __name__ == "__main__":
     while True:
         try:
             # Make a tweet
-            post_status(debug=True)
+            post_status(debug=False)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
 
@@ -258,6 +258,7 @@ if __name__ == "__main__":
                 'most_delayed': most_delayed,
                 'most_cancelled': most_cancelled, 
                 'delayed_by_airline': str(delayed_by_airline),
+                'cancelled_by_airline': str(cancelled_by_airline),
                 'delayed': delayed,
                 'cancelled': cancelled,
                 'ontime': ontime,
