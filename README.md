@@ -8,7 +8,7 @@ An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.c
 
 
 ## 🧮 The scoring model
-The former scoring model represented a simple fraction: 
+The former scoring model used to represent a simple fraction: 
 
 $$\text{Score V1} = \frac{\text{No. of On Time Departures}}{\text{No. of Total Departures}}$$
 
