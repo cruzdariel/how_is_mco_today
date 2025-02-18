@@ -253,12 +253,23 @@ def push_to_github():
 if __name__ == "__main__":
     while True:
         try:
-            # Make a tweet
+            # recalculate data on every loop iteration
+            flights = pull_data()
+            tsa_data = pull_tsa()
+            if not tsa_data or not flights:
+                print("Data not available. Retrying after delay.")
+                time.sleep(5400)
+                continue
+
+            (score_metric, most_delayed, most_cancelled, delayed_by_airline, cancelled_by_airline,
+             delayed, cancelled, ontime, total_flights, average_general_wait, average_precheck_wait,
+             average_overall_wait) = score(flights)
+
             post_status(debug=False)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
 
-            # Write data to CSV
+            # write data to CSV
             csv_row = {
                 'timestamp': datetime.now().isoformat(),
                 'score_metric': score_metric,
@@ -273,8 +284,8 @@ if __name__ == "__main__":
                 'average_general_wait': average_general_wait,
                 'average_precheck_wait': average_precheck_wait,
                 'average_overall_wait': average_overall_wait,
-                'open_checkpoints': pull_tsa()['open_checkpoints_count'],
-                'lane_wait_times': str(pull_tsa()['lane_wait_times'])
+                'open_checkpoints': tsa_data['open_checkpoints_count'],
+                'lane_wait_times': str(tsa_data['lane_wait_times'])
             }
             file_exists = os.path.isfile('history.csv')
             with open('history.csv', 'a', newline='') as f:
@@ -286,51 +297,16 @@ if __name__ == "__main__":
             
             time.sleep(5400)  # wait for 1.5 hours before next post
         except tweepy.errors.TooManyRequests as error1:
-            # i also learned that Twitter has a limit on posting tweets. this will make the code wait
-            # 24 hours or whatever time is given before trying again. (API limit is 17 tweets/24 hours for 
-            # free bots). this takes all the reset times in the error header, and forces the bot to wait whatever
-            # the longest reset time before running again is to avoid calling X and getting rate limited
-            
+            # handling rate limits
             current_time = int(time.time())
-
-            rate_reset_time = int(error1.response.headers.get("x-user-limit-24hour-reset", current_time + 900))  
+            rate_reset_time = int(error1.response.headers.get("x-user-limit-24hour-reset", current_time + 900))
             app_reset_time = int(error1.response.headers.get("x-app-limit-24hour-reset", current_time + 900))
             final_reset_time = max(rate_reset_time, app_reset_time)
-            remaining_requests = int(error1.response.headers.get("x-rate-limit-remaining", 1))  # Default to 1 to be safe
-            
-            seconds_until_reset = max(final_reset_time - current_time, 900)  # default 15 min
-
+            # calculates the longest wait time out of all the reset times in the header and forces it to wait that long
+            seconds_until_reset = max(final_reset_time - current_time, 900)
             print(f"No remaining API requests. Sleeping for {seconds_until_reset} seconds.")
             time.sleep(seconds_until_reset)
         except tweepy.errors.Forbidden:
-            # fixing a recurring issue where if nothing changes i cant tweet because x prohibits
-            # duplicate tweets
-            print(f"No changes since last post.")
-
-            # Write data to CSV
-            csv_row = {
-                'timestamp': datetime.now().isoformat(),
-                'score_metric': score_metric,
-                'most_delayed': most_delayed,
-                'most_cancelled': most_cancelled, 
-                'delayed_by_airline': str(delayed_by_airline),
-                'cancelled_by_airline': str(cancelled_by_airline),
-                'delayed': delayed,
-                'cancelled': cancelled,
-                'ontime': ontime,
-                'total_flights': total_flights,
-                'average_general_wait': average_general_wait,
-                'average_precheck_wait': average_precheck_wait,
-                'average_overall_wait': average_overall_wait,
-                'open_checkpoints': pull_tsa()['open_checkpoints_count'],
-                'lane_wait_times': str(pull_tsa()['lane_wait_times'])
-            }
-            file_exists = os.path.isfile('history.csv')
-            with open('history.csv', 'a', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=csv_row.keys())
-                if not file_exists:
-                    writer.writeheader()
-                writer.writerow(csv_row)
-            push_to_github()
-            
-            time.sleep(5400) 
+            # Handling duplicate tweet errors (log and wait)
+            print("No changes since last post.")
+            time.sleep(5400)
