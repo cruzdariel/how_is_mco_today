@@ -254,7 +254,7 @@ if __name__ == "__main__":
     while True:
         try:
             # Make a tweet
-            post_status(debug=True)
+            post_status(debug=False)
             print(f"Most delayed: {most_delayed}")
             print(f"Most cancelled: {most_cancelled}")
 
@@ -302,3 +302,35 @@ if __name__ == "__main__":
 
             print(f"No remaining API requests. Sleeping for {seconds_until_reset} seconds.")
             time.sleep(seconds_until_reset)
+        except tweepy.errors.Forbidden:
+            # fixing a recurring issue where if nothing changes i cant tweet because x prohibits
+            # duplicate tweets
+            print(f"No changes since last post.")
+
+            # Write data to CSV
+            csv_row = {
+                'timestamp': datetime.now().isoformat(),
+                'score_metric': score_metric,
+                'most_delayed': most_delayed,
+                'most_cancelled': most_cancelled, 
+                'delayed_by_airline': str(delayed_by_airline),
+                'cancelled_by_airline': str(cancelled_by_airline),
+                'delayed': delayed,
+                'cancelled': cancelled,
+                'ontime': ontime,
+                'total_flights': total_flights,
+                'average_general_wait': average_general_wait,
+                'average_precheck_wait': average_precheck_wait,
+                'average_overall_wait': average_overall_wait,
+                'open_checkpoints': pull_tsa()['open_checkpoints_count'],
+                'lane_wait_times': str(pull_tsa()['lane_wait_times'])
+            }
+            file_exists = os.path.isfile('history.csv')
+            with open('history.csv', 'a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=csv_row.keys())
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow(csv_row)
+            push_to_github()
+            
+            time.sleep(5400) 
