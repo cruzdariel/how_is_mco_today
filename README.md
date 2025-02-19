@@ -1,6 +1,8 @@
 # How is MCO today?
 
-An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every 1.5 hours.
+An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com) and [@howismcotoday.dariel.us](https://bsky.app/profile/howismcotoday.dariel.us/) on [BlueSky](bsky.app), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every 1.5 hours on X and every 30 minutes on BlueSky.
+
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/howismcotoday)](x.com/howismcotoday) [![Follow on BlueSky](https://img.shields.io/badge/-Follow%20@howismcotoday.dariel.us-blue?logo=Bluesky&logoColor=white)](https://bsky.app/profile/howismcotoday.dariel.us)
 
 ## 🧍‍♂️ Authors
 
