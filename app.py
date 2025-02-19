@@ -285,7 +285,8 @@ if __name__ == "__main__":
                 'average_precheck_wait': average_precheck_wait,
                 'average_overall_wait': average_overall_wait,
                 'open_checkpoints': tsa_data['open_checkpoints_count'],
-                'lane_wait_times': str(tsa_data['lane_wait_times'])
+                'lane_wait_times': str(tsa_data['lane_wait_times']),
+                'source':'X'
             }
             file_exists = os.path.isfile('history.csv')
             with open('history.csv', 'a', newline='') as f:
