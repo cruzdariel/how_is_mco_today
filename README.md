@@ -3,6 +3,7 @@
 An automated bot called [@howismcotoday](https://x.com/howismcotoday) on [X](x.com) and [@howismcotoday.dariel.us](https://bsky.app/profile/howismcotoday.dariel.us/) on [BlueSky](bsky.app), which scrapes the MCO Departures Board for upcoming departures and produces a scoring metric for how well the airport is operating. Posts an updated score every 1.5 hours on X and every 30 minutes on BlueSky.
 
 [![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/howismcotoday)](x.com/howismcotoday) [![Follow on BlueSky](https://img.shields.io/badge/-Follow%20@howismcotoday.dariel.us-blue?logo=Bluesky&logoColor=white)](https://bsky.app/profile/howismcotoday.dariel.us)
+[![Follow on BlueSky](https://img.shields.io/badge/-Power%20BI%20Dashboard-orange)]([https://bsky.app/profile/howismcotoday.dariel.us](https://app.powerbi.com/view?r=eyJrIjoiN2JiNTgwZDktODI2OS00ZTVkLTllN2MtM2NlZjk2YTliNGQ0IiwidCI6IjgzYjAyYzkyLTVmMjYtNDhlZC05ZTViLTZjMmZjYTQ2YThlNiIsImMiOjN9))
 
 ## 🧍‍♂️ Authors
 
@@ -67,7 +68,7 @@ Run `pip install bs4 tweepy requests` to install all the necessary modules to ru
 
 ## 🔜 What's Next
 Here are some ideas I have in store for future versions of this X bot:
-- [ ] Store updates in a .csv file for future analysis and to act as an open source database for other researchers
+- [X] Store updates in a .csv file for future analysis and to act as an open source database for other researchers
 - [X] In addition to flights, scrape TSA wait times for all terminals
 - [X] Adjust the scoring system to incorporate TSA wait times (longer waits, lower score)
 - [ ] Adjust the scoring system to give more weight based on length of delays (more delayed flights ding the score more than say a 1-2 minute delay)
