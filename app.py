@@ -247,8 +247,22 @@ def post_status(debug):
 def push_to_github():
     """When called, it will auto update the github repo with the most up to date information."""
     subprocess.run(["git", "add", "history.csv"])
-    subprocess.run(["git", "commit", "-m", "Auto-update CSV"])
-    subprocess.run(["git", "push", "origin", "main"])
+    subprocess.run([
+        "git", 
+        "-c", "user.name=howismcotoday Automated Process", 
+        "-c", "user.email=dariel@dariel.us", 
+        "commit", 
+        "-m", 
+        "Auto-update CSV"
+    ])
+    subprocess.run([
+        "git", 
+        "-c", "user.name=howismcotoday Automated Process", 
+        "-c", "user.email=dariel@dariel.us", 
+        "push", 
+        "origin", 
+        "main"
+    ])
 
 if __name__ == "__main__":
     while True:
