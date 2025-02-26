@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
             # write data to CSV
             csv_row = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': (datetime.now() + datetime.timedelta(hours=1)).isoformat(), # adding 1 to move from CST to EST
                 'score_metric': score_metric,
                 'most_delayed': most_delayed,
                 'most_cancelled': most_cancelled, 
