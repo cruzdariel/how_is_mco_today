@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import sys
 import os
 import asyncio
+import sqlite3
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from nasstat_local import Airport
@@ -15,36 +16,53 @@ import util
 import _operationaltrends
 
 # All data
-url = 'https://raw.githubusercontent.com/cruzdariel/how_is_mco_today/refs/heads/main/history.csv'
-df = pd.read_csv(url)
+#url = 'https://raw.githubusercontent.com/cruzdariel/how_is_mco_today/refs/heads/main/history.csv'
+#df = pd.read_csv(url)
 
-# Latest data
-latest = df.iloc[-1]
+def get_df_from_db():
+    DB_PATH = 'storage/database.db'
+    TABLE_NAME = 'history'
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query(
+        """
+        SELECT *
+        FROM history
+        ORDER BY timestamp ASC 
+        """, 
+    conn)
+    conn.close()
+    return df
 
 # Last 24 hours
-now = pd.Timestamp.utcnow()
-df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, format='ISO8601')
-cutoff = now - pd.Timedelta(hours=24)
-last24df = df[df['timestamp'] >= cutoff]
 
 
 @ui.page('/', title="Dashboard | How is MCO Today")
 def main():
+
+    df = get_df_from_db()
+
+    # Latest data
+    latest = df.iloc[-1]
+
     def update_data():
         """
         Refreshes data on the home page
         """
+        df = get_df_from_db()
+        latest = df.iloc[-1]
         plot.update()
-        cancelledcount.update()
-        delayedcount.update()
-        mostcancelled.update()
-        mostdelayed.update()
-        lastupdated.update()
+        cancelledcount.set_text(f"{latest['cancelled']}")
+        delayedcount.set_text(f"{latest['delayed']}")
+        mostcancelled.set_text(f"{latest['most_cancelled']}")
+        mostdelayed.set_text(f"{latest['most_delayed']}")
+        lastupdated.set_text(f"Last updated: {latest['timestamp']}")
+
+        render_tsa_cards()
         ui.notification(message="Refreshed!", timeout=3)
         
     with ui.row().classes('items-center justify-center w-full'):
         lastupdated = ui.label(f"Last updated: {latest['timestamp']}").classes('italic')
-        ui.button('Update data', on_click=lambda: update())
+        ui.button('Update data', on_click=lambda: update_data())
 
     ui.separator().classes('mb-5')
 
@@ -98,19 +116,25 @@ def main():
 
                 ui.label("TSA Waits").classes('text-2xl font-semibold')
                 waitsdf = util.get_security_waits()
-                
-                if len(waitsdf) <= 0:
-                    ui.label("Error fetching TSA wait times")
-                else:
+                tsa_container_wrapper = ui.column().classes('w-full')  # This is where cards will go
+
+                def render_tsa_cards():
+                    tsa_container_wrapper.clear()  # THIS IS the actual container being cleared
+
+                    waitsdf = util.get_security_waits()
+                    if len(waitsdf) <= 0:
+                        with tsa_container_wrapper:
+                            ui.label("Error fetching TSA wait times")
+                        return
+
                     for _, lane in waitsdf.iterrows():
-                        if lane["type"] == "tsa_precheck":
-                            with ui.card().classes("bg-gray-100"):
+                        with tsa_container_wrapper:
+                            with ui.card().classes("w-full"):
                                 ui.label(f"{lane['name']}").classes('text-xl font-semibold')
                                 ui.label(f"Wait Time: {lane['averagewait']}")
-                        else:
-                            with ui.card():
-                                ui.label(f"{lane['name']}").classes('text-xl font-semibold')
-                                ui.label(f"Wait Time: {lane['averagewait']}")
+
+                render_tsa_cards()
+
 
             with ui.column().classes('flex-[1.5] items-center justify-center'):
 
