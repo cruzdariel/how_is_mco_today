@@ -1,13 +1,14 @@
 import requests
 import json
+import pandas as pd
 
 # ORLANDO AIRPORT SPECIFIC FUNCTIONS
-def get_flight_board():
+def get_flights(start, end):
     """
     Returns a pandas DataFrame containing upcoming departures and arrivals.
     """
     APIKEY_GOAA = os.getenv("APIKEY_GOAA")
-    URL = "https://api.goaa.aero/flights/get?scheduledTimestamp=1740986543..1741116143"
+    URL = f"https://api.goaa.aero/flights/get?scheduledTimestamp={start}..{end}"
     HEADER = {
         "api-key": APIKEY_GOAA,
         "api-version": "140",
@@ -49,19 +50,74 @@ def get_flight_board():
     flights = pd.DataFrame(results, columns=columnnames)
 
     return flights
-
     
 def get_parking_loads():
     """
     Returns a pandas DataFrame containing the parking availability of each garage with
     it's Status, EV Charging, and Parking Rates.
+
+    There are two endpoints:
+        - https://api.goaa.aero/parking/rates/MCO
+        - https://api.goaa.aero/parking/availability/MCO
     """
     APIKEY_GOAA = os.getenv("APIKEY_GOAA")
-    URL = "https://api.goaa.aero/parking/availability/MCO"
+    URL_PARKING = "https://api.goaa.aero/parking/availability/MCO"
+    URL_RATES = "https://api.goaa.aero/parking/rates/MCO"
     HEADER = {"api_key":APIKEY_GOAA}
 
-    if not APIKEY:
+    if not APIKEY_GOAA:
         raise ValueError("APIKEY environment variable is not set.")
+
+    # Parking availability 
+
+    response_parking = requests.post(url=URL_PARKING, headers=HEADER)
+
+    if response_parking.status_code != 200:
+        raise ValueError("API request failed.")
+    
+    json_response_parking = response_parking.json()
+
+    results_parking = []
+    columnnames_parking = ["id", "garagename", "category", "status", "ev"]
+    
+    if not json_response_parking["data"]["parkingAvailability"]:
+        raise ValueError("Couldn't find flight data")
+    
+    for garage in json_response_parking["data"]["parkingAvailability"]:
+        id = garage["id"]
+        garagename = garage["name"]
+        category = garage["category"]
+        status = garage["status"]
+        ev = garage["attributes"]["ev"]
+
+        results_parking.append([id, garagename, category, status, ev])
+    
+    # Garage Rates
+    
+    response_rates = requests.post(url=URL_RATES, headers=HEADER)
+
+    if response_rates.status_code != 200:
+        raise ValueError("API request failed.")
+    
+    json_response_rates = response_rates.json()
+
+    results_rates = []
+    columnnames_rates = []
+    
+    if not json_response_rates["data"]["parkingAvailability"]:
+        raise ValueError("Couldn't find flight data")
+    
+    for garage in json_response_parking["data"]["rates"]:
+        id = garage["id"]
+        rate = garage["rate"]
+
+        results_rates.append([id, rate])
+    
+    garage_df = pd.Dataframe(results_parking, columns=columnnames_parking)
+    rates_df = pd.Dataframe(results_rates, columns=columnnames_rates)
+    parking_df = garage_df.merge(rates_df, how="left", on="id")
+    
+    return parking_df
 
 # FAA FUNCTIONS / NATIONAL AIRSPACE
 
