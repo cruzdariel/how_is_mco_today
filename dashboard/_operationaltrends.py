@@ -20,3 +20,24 @@ def get_score_history():
     df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
 
     return df
+
+def get_params():
+    df = get_score_history()
+    x = [ts.isoformat() for ts in df["timestamp"]]
+    y = df['score_metric'].tolist()
+
+    payload = {
+        'data': [
+            {
+                'type': 'scatter',
+                'name': 'Trace 1',
+                'x': x,
+                'y': y,
+            },
+        ],
+        'layout': {
+            'margin': {'l': 15, 'r': 15, 't': 15, 'b': 15},
+            'plot_bgcolor': '#fffff',
+        },
+    }
+    return payload

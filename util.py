@@ -1,6 +1,7 @@
 import requests
 import json
 import pandas as pd
+import os
 
 # ORLANDO AIRPORT SPECIFIC FUNCTIONS
 def get_flights(start, end):
@@ -118,6 +119,43 @@ def get_parking_loads():
     parking_df = garage_df.merge(rates_df, how="left", on="id")
     
     return parking_df
+
+def get_security_waits():
+    APIKEY_GOAA = os.getenv("APIKEY_GOAA")
+    URL = f"https://api.goaa.aero/wait-times/checkpoint/MCO"
+    HEADER = {
+        "api-key": APIKEY_GOAA,
+        "api-version": "140",
+        "Accept": "application/json"
+        }
+
+    if not APIKEY_GOAA:
+        raise ValueError("APIKEY environment variable is not set.")
+
+    response = requests.get(url=URL, headers=HEADER)
+
+    if response.status_code != 200:
+        raise ValueError(f"API request failed: {response.status_code}")
+    
+    json_response = response.json()
+
+    results = []
+    columnnames = ["id", "name", "type", "averagewait", "isopen"]
+    
+    if not json_response["data"]["wait_times"]:
+        raise ValueError("Couldn't find wait data")
+
+    for chkpt in json_response["data"]["wait_times"]:
+        id = chkpt["id"]
+        name = chkpt["name"]
+        type = chkpt["lane"]
+        averagewait = int(chkpt["waitSeconds"])/60
+        isopen = chkpt["isOpen"]
+
+        results.append([id, name, type, averagewait, isopen])
+    
+    security_df = pd.DataFrame(results, columns=columnnames)
+    return security_df
 
 # FAA FUNCTIONS / NATIONAL AIRSPACE
 

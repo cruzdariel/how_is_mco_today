@@ -12,6 +12,7 @@ import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from nasstat_local import Airport
 import util
+import _operationaltrends
 
 # All data
 url = 'https://raw.githubusercontent.com/cruzdariel/how_is_mco_today/refs/heads/main/history.csv'
@@ -26,11 +27,24 @@ df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, format='ISO8601')
 cutoff = now - pd.Timedelta(hours=24)
 last24df = df[df['timestamp'] >= cutoff]
 
+
 @ui.page('/', title="Dashboard | How is MCO Today")
 def main():
-    global plot_element
-
-    ui.label(f"Last updated: {latest['timestamp']}").classes('italic w-full text-center')
+    def update_data():
+        """
+        Refreshes data on the home page
+        """
+        plot.update()
+        cancelledcount.update()
+        delayedcount.update()
+        mostcancelled.update()
+        mostdelayed.update()
+        lastupdated.update()
+        ui.notification(message="Refreshed!", timeout=3)
+        
+    with ui.row().classes('items-center justify-center w-full'):
+        lastupdated = ui.label(f"Last updated: {latest['timestamp']}").classes('italic')
+        ui.button('Update data', on_click=lambda: update())
 
     ui.separator().classes('mb-5')
 
@@ -47,28 +61,28 @@ def main():
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Cancelled Flights').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{latest['cancelled']}").classes('text-5xl font-semibold')
+                    cancelledcount = ui.label(f"{latest['cancelled']}").classes('text-5xl font-semibold')
                     ui.label('flights').classes('text-sm text-black-600')
                     ui.label('(comparison text)').classes('text-sm text-green-600')
             # Most Cancellations
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Most Cancellations').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{latest['most_cancelled']}").classes('text-5xl font-semibold')
+                    mostcancelled = ui.label(f"{latest['most_cancelled']}").classes('text-5xl font-semibold')
 
         with ui.column().classes('items-end ml-20'):
             # Number of Delays
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Delayed Flights').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{latest['delayed']}").classes('text-5xl font-semibold')
+                    delayedcount = ui.label(f"{latest['delayed']}").classes('text-5xl font-semibold')
                     ui.label('flights').classes('text-sm text-black-600')
                     ui.label('(comparison text)').classes('text-sm text-green-600')
             # Most Delays
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Most Delays').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{latest['most_delayed']}").classes('text-5xl font-semibold')
+                    mostdelayed = ui.label(f"{latest['most_delayed']}").classes('text-5xl font-semibold')
 
     with ui.column().classes('w-full items-center justify-center'):
         with ui.row(wrap=True).classes('w-full'):
@@ -77,11 +91,26 @@ def main():
 
                 ui.label("Operational Trends").classes('text-2xl font-semibold')
 
-                
+                data = _operationaltrends.get_params()
+                plot = ui.plotly(data).classes('w-full h-15')
+
             with ui.column().classes('flex-[1] items-center justify-center'):
 
                 ui.label("TSA Waits").classes('text-2xl font-semibold')
-                ui.label("plot here")
+                waitsdf = util.get_security_waits()
+                
+                if len(waitsdf) <= 0:
+                    ui.label("Error fetching TSA wait times")
+                else:
+                    for _, lane in waitsdf.iterrows():
+                        if lane["type"] == "tsa_precheck":
+                            with ui.card().classes("bg-gray-100"):
+                                ui.label(f"{lane['name']}").classes('text-xl font-semibold')
+                                ui.label(f"Wait Time: {lane['averagewait']}")
+                        else:
+                            with ui.card():
+                                ui.label(f"{lane['name']}").classes('text-xl font-semibold')
+                                ui.label(f"Wait Time: {lane['averagewait']}")
 
             with ui.column().classes('flex-[1.5] items-center justify-center'):
 
