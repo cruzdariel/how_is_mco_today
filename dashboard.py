@@ -5,13 +5,25 @@ import pandas as pd
 import numpy as np
 from nasstat_local import Airport
 import requests
+from datetime import datetime, timedelta
 
-@ui.page('/')
+# All data
+url = 'https://raw.githubusercontent.com/cruzdariel/how_is_mco_today/refs/heads/main/history.csv'
+df = pd.read_csv(url)
+
+# Latest data
+latest = df.iloc[-1]
+
+# Last 24 hours
+now = pd.Timestamp.utcnow()
+df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, format='ISO8601')
+cutoff = now - pd.Timedelta(hours=24)
+last24df = df[df['timestamp'] >= cutoff]
+
+@ui.page('/', title="Dashboard | How is MCO Today")
 def main():
-    url = 'https://raw.githubusercontent.com/cruzdariel/how_is_mco_today/refs/heads/main/history.csv'
-    df = pd.read_csv(url)
 
-    ui.label(f"Last updated: {df.iloc[-1]['timestamp']}").classes('italic w-full text-center')
+    ui.label(f"Last updated: {latest['timestamp']}").classes('italic w-full text-center')
 
     ui.separator().classes('mb-5')
 
@@ -26,52 +38,69 @@ def main():
         with ui.column().classes('items-end ml-20'):
             # Number of Cancellations
             with ui.row().classes('items-baseline gap-4'):
-                ui.label('Delayed Flights').classes('text-xl')
+                ui.label('Cancelled Flights').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{df.iloc[-1]['cancelled']}").classes('text-5xl font-semibold')
+                    ui.label(f"{latest['cancelled']}").classes('text-5xl font-semibold')
                     ui.label('flights').classes('text-sm text-black-600')
                     ui.label('(comparison text)').classes('text-sm text-green-600')
             # Most Cancellations
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Most Cancellations').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{df.iloc[-1]['most_cancelled']}").classes('text-5xl font-semibold')
+                    ui.label(f"{latest['most_cancelled']}").classes('text-5xl font-semibold')
 
         with ui.column().classes('items-end ml-20'):
             # Number of Delays
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Delayed Flights').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{df.iloc[-1]['delayed']}").classes('text-5xl font-semibold')
+                    ui.label(f"{latest['delayed']}").classes('text-5xl font-semibold')
                     ui.label('flights').classes('text-sm text-black-600')
                     ui.label('(comparison text)').classes('text-sm text-green-600')
             # Most Delays
             with ui.row().classes('items-baseline gap-4'):
                 ui.label('Most Delays').classes('text-xl')
                 with ui.column().classes('items-end'):
-                    ui.label(f"{df.iloc[-1]['most_delayed']}").classes('text-5xl font-semibold')
+                    ui.label(f"{latest['most_delayed']}").classes('text-5xl font-semibold')
 
     with ui.column().classes('w-full items-center justify-center'):
-        with ui.row().classes('w-full'):
+        with ui.row(wrap=True).classes('w-full'):
             with ui.column().classes('flex-[2] items-center justify-center'):
                 ui.label("Operational Trends").classes('text-2xl font-semibold')
 
                 # Score over time graph
-                fig = go.Figure(
-                    go.Scatter(
-                        x=df['timestamp'],
-                        y=df['score_metric'],
-                        mode='lines',
-                        name='Score Metric'
-                    )
-                )
-                fig.update_layout(
-                    title='Scores over time',
-                    xaxis_title='Timestamp',
-                    yaxis_title='Score Metric',
-                )
+                plot_state = {'view': 'all'}
 
-                ui.plotly(fig).classes('w-full h-30')
+                def create_plot(dataframe):
+                    fig = go.Figure(
+                        go.Scatter(
+                            x=dataframe['timestamp'],
+                            y=dataframe['score_metric'],
+                            mode='lines',
+                            name='Score Metric'
+                        )
+                    )
+                    fig.update_layout(
+                        title='Scores over time',
+                        xaxis_title='Timestamp',
+                        yaxis_title='Score Metric',
+                        margin=dict(l=0, r=0, t=30, b=0)
+                    )
+                    return fig
+
+                plot_element = ui.plotly(create_plot(df)).classes('w-full h-30')
+                def toggle_plot():
+                    if plot_state['view'] == 'all':
+                        plot_state['view'] = '24h'
+                        plot_element.figure = create_plot(last24df)
+                        plot_toggle_button.set_text('Show All Time')
+                    else:
+                        plot_state['view'] = 'all'
+                        plot_element.figure = create_plot(df)
+                        plot_toggle_button.set_text('Show Last 24h')
+                    plot_element.update()
+
+                plot_toggle_button = ui.button('Show Last 24h', on_click=toggle_plot)
                 
             with ui.column().classes('flex-[1] items-center justify-center'):
                 ui.label("TSA Waits").classes('text-2xl font-semibold')

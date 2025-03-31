@@ -2,3 +2,4 @@ tweepy
 beautifulsoup4
 requests
 atproto
+nicegui
