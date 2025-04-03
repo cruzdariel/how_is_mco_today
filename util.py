@@ -64,17 +64,19 @@ def get_parking_loads():
     APIKEY_GOAA = os.getenv("APIKEY_GOAA")
     URL_PARKING = "https://api.goaa.aero/parking/availability/MCO"
     URL_RATES = "https://api.goaa.aero/parking/rates/MCO"
-    HEADER = {"api_key":APIKEY_GOAA}
+    HEADER = {"api-key":APIKEY_GOAA,
+        "api-version": "140",
+        "Accept": "application/json"}
 
     if not APIKEY_GOAA:
         raise ValueError("APIKEY environment variable is not set.")
 
     # Parking availability 
 
-    response_parking = requests.post(url=URL_PARKING, headers=HEADER)
+    response_parking = requests.get(url=URL_PARKING, headers=HEADER)
 
     if response_parking.status_code != 200:
-        raise ValueError("API request failed.")
+        raise ValueError(f"API request failed. {response_parking}")
     
     json_response_parking = response_parking.json()
 
@@ -95,7 +97,7 @@ def get_parking_loads():
     
     # Garage Rates
     
-    response_rates = requests.post(url=URL_RATES, headers=HEADER)
+    response_rates = requests.get(url=URL_RATES, headers=HEADER)
 
     if response_rates.status_code != 200:
         raise ValueError("API request failed.")
@@ -103,19 +105,19 @@ def get_parking_loads():
     json_response_rates = response_rates.json()
 
     results_rates = []
-    columnnames_rates = []
+    columnnames_rates = ["id", "rate"]
     
-    if not json_response_rates["data"]["parkingAvailability"]:
+    if not json_response_rates["data"]["rates"]:
         raise ValueError("Couldn't find flight data")
     
-    for garage in json_response_parking["data"]["rates"]:
+    for garage in json_response_rates["data"]["rates"]:
         id = garage["id"]
         rate = garage["rate"]
 
         results_rates.append([id, rate])
     
-    garage_df = pd.Dataframe(results_parking, columns=columnnames_parking)
-    rates_df = pd.Dataframe(results_rates, columns=columnnames_rates)
+    garage_df = pd.DataFrame(results_parking, columns=columnnames_parking)
+    rates_df = pd.DataFrame(results_rates, columns=columnnames_rates)
     parking_df = garage_df.merge(rates_df, how="left", on="id")
     
     return parking_df
