@@ -2,6 +2,7 @@ import requests
 import json
 import pandas as pd
 import os
+import sqlite3
 
 # ORLANDO AIRPORT SPECIFIC FUNCTIONS
 def get_flights(start, end):
@@ -159,6 +160,20 @@ def get_security_waits():
     security_df = pd.DataFrame(results, columns=columnnames)
     return security_df
 
+def get_data(start, end):
+    """
+    Fetch data from flights, parking, and security systems.
+    Parameters:
+        start: The starting point (date/time) to filter the flight data.
+        end: The ending point (date/time) to filter the flight data.
+    Returns:
+        tuple: A tuple containing:
+            - flights data from get_flights(start, end)
+            - parking loads data from get_parking_loads()
+            - security wait times from get_security_waits()
+    """
+    return get_flights(start, end), get_parking_loads(), get_security_waits()
+
 # FAA FUNCTIONS / NATIONAL AIRSPACE
 
 # SCORING
@@ -167,10 +182,58 @@ def score():
 
 # POSTING ON SOCIALS
 
+def post(platform, debug=False):
+    return
+
 # SQL DATABASE 
 
-def write(input):
-    return
-
 def read(input):
-    return
+    """
+    Retrieves data from the 'history' table in the SQLite database and returns a pandas DataFrame.
+    Parameters:
+        input (str): The column expression(s) to select from the 'history' table.
+    Returns:
+        pandas.DataFrame: A DataFrame containing the query results.
+    Note:
+        - The results are ordered in ascending order by the 'timestamp' field.
+        - The SQL query is constructed using formatted string interpolation
+    """
+    DB_PATH = 'storage/database.db'
+    TABLE_NAME = 'history'
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query(
+        f"""
+        SELECT {input}
+        FROM history
+        ORDER BY timestamp ASC 
+        """, 
+    conn)
+    conn.close()
+
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
+
+    return df
+
+def write(values):
+    """
+    Inserts a new row into the 'history' table using the provided list of values.
+    
+    Parameters:
+        values (list): A list of values corresponding to the columns of the history table.
+        
+    Note:
+        The order and number of values must match the structure of the 'history' table.
+    """
+    conn = sqlite3.connect("storage/database.db")
+    cursor = conn.cursor()
+    placeholders = ', '.join('?' for _ in values)
+    sql_query = f"INSERT INTO history VALUES ({placeholders})"
+    
+    try:
+        cursor.execute(sql_query, values)
+        conn.commit()
+    except sqlite3.Error as e:
+        print("An error occurred:", e)
+        conn.rollback()
+    finally:
+        conn.close()
