@@ -5,6 +5,6 @@ import sqlite3
 def loginpage():
     return
 
-@ui.page('/api/data')
+@ui.page('/api/calculator')
 def loginpage():
     return
