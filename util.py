@@ -214,7 +214,7 @@ def read(input):
 
     return df
 
-def write(values):
+def write(value1, value2, value3):
     """
     Inserts a new row into the 'history' table using the provided list of values.
     
@@ -224,16 +224,15 @@ def write(values):
     Note:
         The order and number of values must match the structure of the 'history' table.
     """
-    conn = sqlite3.connect("storage/database.db")
-    cursor = conn.cursor()
-    placeholders = ', '.join('?' for _ in values)
-    sql_query = f"INSERT INTO history VALUES ({placeholders})"
-    
-    try:
-        cursor.execute(sql_query, values)
-        conn.commit()
-    except sqlite3.Error as e:
-        print("An error occurred:", e)
-        conn.rollback()
-    finally:
-        conn.close()
+    query = """
+    INSERT INTO history (
+        value1,
+        value2,
+        value3
+    ) VALUES (?, ?, ?)
+    """
+
+    values = (value1, value2, value3)
+    cursor.execute(query, values)
+    conn.commit()
+    conn.close()
