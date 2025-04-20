@@ -2,9 +2,7 @@ import requests
 import json
 import pandas as pd
 import os
-import sqlite3
 
-# ORLANDO AIRPORT SPECIFIC FUNCTIONS
 def get_flights(start, end):
     """
     Returns a pandas DataFrame containing upcoming departures and arrivals.
@@ -173,66 +171,3 @@ def get_data(start, end):
             - security wait times from get_security_waits()
     """
     return get_flights(start, end), get_parking_loads(), get_security_waits()
-
-# FAA FUNCTIONS / NATIONAL AIRSPACE
-
-# SCORING
-def score():
-    return
-
-# POSTING ON SOCIALS
-
-def post(platform, debug=False):
-    return
-
-# SQL DATABASE 
-
-def read(input):
-    """
-    Retrieves data from the 'history' table in the SQLite database and returns a pandas DataFrame.
-    Parameters:
-        input (str): The column expression(s) to select from the 'history' table.
-    Returns:
-        pandas.DataFrame: A DataFrame containing the query results.
-    Note:
-        - The results are ordered in ascending order by the 'timestamp' field.
-        - The SQL query is constructed using formatted string interpolation
-    """
-    DB_PATH = 'storage/database.db'
-    TABLE_NAME = 'history'
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query(
-        f"""
-        SELECT {input}
-        FROM history
-        ORDER BY timestamp ASC 
-        """, 
-    conn)
-    conn.close()
-
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
-
-    return df
-
-def write(value1, value2, value3):
-    """
-    Inserts a new row into the 'history' table using the provided list of values.
-    
-    Parameters:
-        values (list): A list of values corresponding to the columns of the history table.
-        
-    Note:
-        The order and number of values must match the structure of the 'history' table.
-    """
-    query = """
-    INSERT INTO history (
-        value1,
-        value2,
-        value3
-    ) VALUES (?, ?, ?)
-    """
-
-    values = (value1, value2, value3)
-    cursor.execute(query, values)
-    conn.commit()
-    conn.close()

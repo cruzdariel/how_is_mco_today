@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from nasstat_local import Airport
 import util
 import _operationaltrends
-import _downloaddata
+#import _downloaddata
 from datetime import datetime
 
 # All data
