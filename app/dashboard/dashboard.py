@@ -59,7 +59,7 @@ def main():
         mostdelayed.set_text(f"{latest['most_delayed']}")
         timestamp_dt = datetime.fromisoformat(latest['timestamp'])
         formatted_date = timestamp_dt.strftime('%a. %B %d %Y @ %I:%M %p')
-        lastupdated.set_text(f"Last updated: {formatted_date}").classes('italic')
+        lastupdated.set_text(f"Last updated: {formatted_date}")
         totalcount.set_text(f"{latest['total_flights']}")
         render_tsa_cards()
         render_atc_advisories()
@@ -252,4 +252,4 @@ def main():
                 ui.label("Cancellation Counts by Airline").classes('text-2xl font-semibold')
 ####
 
-ui.run()
+ui.run(port=5001)

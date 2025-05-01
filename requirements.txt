@@ -3,3 +3,8 @@ beautifulsoup4
 requests
 atproto
 nicegui
+matplotlib
+plotly
+pandas
+numpy
+requests
